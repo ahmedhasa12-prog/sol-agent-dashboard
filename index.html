@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0e14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SOL Day-Trade Agent</title>
+<style>
+  :root {
+    --bg: #0b0e14; --card: #131826; --border: #232b40; --text: #e6edf3;
+    --muted: #8b94a7; --green: #2ea043; --red: #f85149; --amber: #d29922;
+    --blue: #58a6ff; --sol: #14f195;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 14px; line-height: 1.45;
+    max-width: 540px; margin: 0 auto; padding: 14px 12px 32px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .muted { color: var(--muted); font-size: 12px; }
+  h1 { font-size: 17px; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
+  h1 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sol);
+            box-shadow: 0 0 8px var(--sol); }
+  .price { font-size: 22px; font-weight: 600; }
+  .up { color: var(--green); } .down { color: var(--red); } .flat { color: var(--muted); }
+
+  .decision {
+    text-align: center; padding: 16px 14px; border-radius: 12px;
+    margin: 12px 0; font-weight: 700; font-size: 18px; letter-spacing: 1px;
+    border: 1px solid var(--border);
+  }
+  .decision.wait { background: #161b29; color: var(--muted); }
+  .decision.trade { background: rgba(46,160,67,.14); color: var(--green);
+                    border-color: rgba(46,160,67,.5); }
+  .decision .sub { font-size: 12px; font-weight: 400; color: var(--muted);
+                   margin-top: 6px; letter-spacing: 0; display: block; }
+
+  .gates { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .gate { border-radius: 10px; border: 1px solid var(--border); padding: 10px 8px;
+          text-align: center; background: var(--card); }
+  .gate .g-name { font-size: 10px; color: var(--muted); text-transform: uppercase;
+                  letter-spacing: .8px; }
+  .gate .g-state { font-size: 13px; font-weight: 700; margin-top: 3px; }
+  .gate.pass .g-state { color: var(--green); }
+  .gate.fail .g-state { color: var(--red); }
+  .gate.warn .g-state { color: var(--amber); }
+
+  .metric { margin: 9px 0; }
+  .metric .bar { height: 5px; border-radius: 3px; background: var(--border);
+                 margin-top: 5px; position: relative; overflow: hidden; }
+  .metric .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .kv { display: flex; justify-content: space-between; font-size: 13px; }
+  .kv b { font-weight: 600; }
+
+  .big { font-size: 24px; font-weight: 700; }
+  .pos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 8px;
+              font-size: 13px; }
+  .pos-grid .muted { font-size: 11px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  td, th { padding: 6px 6px; text-align: right; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; }
+  td:first-child, th:first-child { text-align: left; }
+
+  .log-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border);
+              font-size: 12.5px; align-items: baseline; }
+  .log-item:last-child { border-bottom: none; }
+  .log-item .t { color: var(--muted); white-space: nowrap; font-size: 11px; min-width: 74px; }
+  .chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+  .chip.trade { background: rgba(46,160,67,.18); color: var(--green); }
+  .chip.wait { background: rgba(139,148,167,.15); color: var(--muted); }
+
+  .news-item { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .news-item:last-child { border-bottom: none; }
+  .news-item .src { color: var(--muted); font-size: 11px; }
+  .dir { font-weight: 700; margin-right: 6px; }
+  .tagcoin { color: var(--sol); font-size: 10px; border: 1px solid rgba(20,241,149,.4);
+             padding: 1px 5px; border-radius: 8px; margin-left: 6px; }
+
+  .spark { width: 100%; height: 70px; margin-top: 8px; }
+  .hours { display: flex; gap: 2px; align-items: flex-end; height: 56px; margin-top: 10px; }
+  .hours .h { flex: 1; background: var(--blue); opacity: .55; border-radius: 2px 2px 0 0; }
+  .hours .h.low { background: var(--red); opacity: .8; }
+  .hours .h.high { background: var(--sol); opacity: .9; }
+  footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 8px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 10px;
+          background: var(--border); color: var(--muted); }
+
+  /* password gate */
+  .gate-overlay { position: fixed; inset: 0; background: rgba(9,11,16,.98); z-index: 50;
+                  display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .gate-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+               padding: 22px; width: 100%; max-width: 340px; }
+  .gate-card h2 { font-size: 15px; margin-bottom: 6px; }
+  .gate-card p { font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
+  .gate-card input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+                     background: var(--bg); color: var(--text); font-size: 14px; margin-bottom: 10px; }
+  .gate-card button { width: 100%; padding: 10px; border-radius: 8px; border: none;
+                      background: var(--sol); color: #04120b; font-weight: 700; font-size: 14px; }
+  .gate-err { color: var(--red); font-size: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="gate-overlay" id="gate" hidden>
+  <div class="gate-card">
+    <h2>&#128274; Dashboard locked</h2>
+    <p>Enter the dashboard password to decrypt the agent data. It stays AES-encrypted at rest and is remembered on this device after first unlock.</p>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password">
+    <button id="pw-btn">Unlock</button>
+    <div class="gate-err" id="pw-err"></div>
+  </div>
+</div>
+
+<h1><span class="dot"></span> SOL Day-Trade Agent <span class="pill" id="mode-pill">paper</span></h1>
+
+<div class="card">
+  <div class="row">
+    <div>
+      <div class="muted">SOL / USDT &middot; Binance</div>
+      <div class="price" id="price">--</div>
+    </div>
+    <div style="text-align:right">
+      <div class="muted" id="age">updated --</div>
+      <div id="chg24" class="flat">--</div>
+    </div>
+  </div>
+  <div class="decision wait" id="decision">WAIT<span class="sub" id="decision-sub"></span></div>
+  <div class="gates">
+    <div class="gate" id="g-signal"><div class="g-name">Signal</div><div class="g-state">--</div></div>
+    <div class="gate" id="g-market"><div class="g-name">Market</div><div class="g-state">--</div></div>
+    <div class="gate" id="g-news"><div class="g-name">News</div><div class="g-state">--</div></div>
+  </div>
+</div>
+
+<div class="card" id="signal-card">
+  <div class="row"><div class="muted" style="text-transform:uppercase; letter-spacing:.8px; font-size:11px">H2 &middot; BTC-lag catch-up</div>
+  <div class="muted" id="h2-req"></div></div>
+  <div class="metric"><div class="kv"><span class="muted">BTC move, 6h</span><b id="btc-move">--</b></div>
+    <div class="bar"><div class="fill" id="btc-fill" style="background:var(--green); width:0%"></div></div></div>
+  <div class="metric"><div class="kv"><span class="muted">SOL beta-gap</span><b id="sol-gap">--</b></div>
+    <div class="bar"><div class="fill" id="gap-fill" style="background:var(--red); width:0%"></div></div></div>
+  <div class="kv" style="margin-top:4px">
+    <span class="muted">beta (90d): <b id="beta">--</b></span>
+    <span class="muted">regime: <b id="regime">--</b></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <div><div class="muted">Paper equity</div><div class="big" id="equity">--</div></div>
+    <div style="text-align:right">
+      <div class="muted">P&L since start</div>
+      <div id="pnl" class="flat">--</div>
+      <div class="muted" id="stats" style="margin-top:4px"></div>
+    </div>
+  </div>
+  <svg class="spark" id="spark" viewBox="0 0 540 70" preserveAspectRatio="none"></svg>
+  <div id="position"></div>
+</div>
+
+<div class="card">
+  <div class="row"><div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px">Average day shape (info only)</div>
+  <div class="muted" id="hours-note">H1 timing failed backtest</div></div>
+  <div class="hours" id="hours"></div>
+</div>
+
+<div class="card" id="trades-card">
+  <div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px; margin-bottom:4px">Paper trades</div>
+  <table id="trades"></table>
+</div>
+
+<div class="card">
+  <div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px; margin-bottom:4px">Decision log</div>
+  <div id="log"></div>
+</div>
+
+<div class="card">
+  <div class="row"><div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px">News radar</div>
+  <div class="muted" id="news-n"></div></div>
+  <div id="news"></div>
+</div>
+
+<footer>
+  Paper trading account &middot; simulated money only &middot; live mode disabled by design.<br>
+  Backtest record of H2 rule: +16.2% / 10 months, PF 1.78, t-stat 1.04, n=23 (small sample &mdash; judge paper results, not promises).
+</footer>
+
+<script>
+let D = {};
+const $ = id => document.getElementById(id);
+
+function cls(v, invert) {
+  if (v > 0) return invert ? 'down' : 'up';
+  if (v < 0) return invert ? 'up' : 'down';
+  return 'flat';
+}
+function shortTs(ts) { return (ts || '').replace('T', ' ').slice(5, 16); }
+
+function gateChip(el, state) {
+  // state: 'pass' | 'fail' | 'warn'
+  el.className = 'gate ' + state;
+}
+
+function render() {
+  const h2 = D.h2 || {}, mk = D.market || {}, nw = D.news || {},
+        acc = D.account || {}, tim = D.timing || {};
+
+  // decision banner
+  const dec = $('decision');
+  dec.className = 'decision ' + (D.decision === 'TRADE' ? 'trade' : 'wait');
+  dec.firstChild.nodeValue = D.decision === 'TRADE' ? 'TRADE  (paper)' : 'WAIT';
+  $('decision-sub').textContent = D.ts ? 'as of ' + shortTs(D.ts) + ' UTC' : '';
+
+  // gates
+  gateChip($('g-signal'), h2.fires ? 'pass' : 'fail');
+  $('g-signal').querySelector('.g-state').textContent = h2.fires ? 'FIRE' : 'NO';
+  const mkState = mk.action === 'veto' ? 'fail' : mk.action === 'downsize' ? 'warn' : 'pass';
+  gateChip($('g-market'), mkState);
+  $('g-market').querySelector('.g-state').textContent = (mk.action || '--').toUpperCase();
+  const nwState = nw.action === 'veto' ? 'fail' : nw.action === 'downsize' ? 'warn' : 'pass';
+  gateChip($('g-news'), nwState);
+  $('g-news').querySelector('.g-state').textContent = (nw.action || '--').toUpperCase();
+
+  // H2 metrics
+  $('h2-req').textContent = 'need BTC \u2265 +' + (h2.btc_move_pct || 1.5) + '% \u00b7 gap \u2264 -' + (h2.gap_pct || 0.5) + '%';
+  const btcMove = h2.btc_ret_L_pct || 0;
+  $('btc-move').innerHTML = (btcMove >= 0 ? '+' : '') + btcMove.toFixed(2) + '%';
+  $('btc-move').className = btcMove >= (h2.btc_move_pct || 1.5) ? 'up' : 'flat';
+  $('btc-fill').style.width = Math.min(100, Math.max(3, btcMove / (h2.btc_move_pct || 1.5) * 100)) + '%';
+  const gap = h2.shortfall_pct || 0;
+  $('sol-gap').textContent = (gap >= 0 ? '+' : '') + gap.toFixed(2) + '%';
+  $('sol-gap').className = gap <= -(h2.gap_pct || 0.5) ? 'up' : 'flat';
+  $('gap-fill').style.width = Math.min(100, Math.max(3, Math.abs(gap) / (h2.gap_pct || 0.5) * 100)) + '%';
+  $('beta').textContent = (h2.beta || 0).toFixed(2);
+  const reg = $('regime');
+  reg.textContent = h2.regime_ok ? 'above SMA20 \u2713' : 'below SMA20 \u2717';
+  reg.className = h2.regime_ok ? 'up' : 'down';
+
+  // account
+  $('equity').textContent = (acc.equity ?? '--').toFixed ? acc.equity.toFixed(2) : '--';
+  const pnl = (acc.equity || 0) - (acc.start_capital || 200);
+  $('pnl').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT';
+  $('pnl').className = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'flat';
+  const st = D.stats || {};
+  $('stats').textContent = (st.n_trades || 0) + ' trades' +
+      (st.win_rate_pct != null ? ' \u00b7 win ' + st.win_rate_pct + '%' : '');
+
+  // equity sparkline
+  const pts = D.eq_curve && D.eq_curve.length > 1 ? D.eq_curve : [200, 200];
+  const mn = Math.min(...pts), mx = Math.max(...pts), span = Math.max(1, mx - mn);
+  const xs = pts.map((v, i) => (i / (pts.length - 1)) * 540);
+  const ys = pts.map(v => 65 - ((v - mn) / span) * 55);
+  const base = 65 - ((200 - mn) / span) * 55;
+  const rising = pts[pts.length - 1] >= pts[0];
+  $('spark').innerHTML =
+    '<line x1="0" y1="' + base + '" x2="540" y2="' + base + '" stroke="#232b40" stroke-dasharray="4 4" stroke-width="1"/>' +
+    '<polyline points="' + xs.map((x, i) => x + ',' + ys[i]).join(' ') +
+    '" fill="none" stroke="' + (rising ? '#2ea043' : '#f85149') + '" stroke-width="2"/>';
+
+  // open position
+  const p = acc.position;
+  $('position').innerHTML = p
+    ? '<div class="pos-grid">' +
+      '<div><div class="muted">ENTRY</div><b>' + p.entry_px + '</b> <span class="muted">(' + shortTs(p.entry_ts) + ')</span></div>' +
+      '<div><div class="muted">QTY</div><b>' + p.qty.toFixed(2) + '</b> SOL</div>' +
+      '<div><div class="muted">STOP</div><b class="down">' + p.stop_px + '</b> (-' + (D.stop_pct || 2.5) + '%)</div>' +
+      '<div><div class="muted">TIME EXIT</div><b>' + shortTs(p.exit_after) + '</b></div>' +
+      '</div>'
+    : '<div class="muted" style="margin-top:6px">flat &mdash; no open position' +
+      (acc.halted ? ' &middot; <span class="down">halted today (daily loss cap)</span>' : '') + '</div>';
+
+  // average-day shape
+  if (tim.ok && tim.avg_day_bps) {
+    const vals = tim.avg_day_bps, n = vals.length;
+    const mn2 = Math.min(...vals), mx2 = Math.max(...vals), span2 = Math.max(1, mx2 - mn2);
+    $('hours').innerHTML = vals.map((v, h) => {
+      const hh = (v - mn2) / span2;
+      const low = (tim.low_hours || []).includes(h), high = (tim.high_hours || []).includes(h);
+      return '<div class="h ' + (low ? 'low' : high ? 'high' : '') +
+             '" style="height:' + (12 + hh * 44) + 'px" title="' + h + ':00 UTC, ' + v + ' bps"></div>';
+    }).join('');
+    $('hours-note').textContent = 'low ~' + (tim.low_hours || []).map(h => h + 'h').join('/') +
+                                 ' UTC \u00b7 high ~' + (tim.high_hours || []).map(h => h + 'h').join('/') + ' UTC';
+  }
+
+  // trades table
+  const trs = D.trades || [];
+  $('trades').innerHTML = '<tr><th>closed</th><th>pnl USDT</th><th>pnl %</th><th>exit</th></tr>' +
+    (trs.length ? trs.map(t =>
+      '<tr><td>' + shortTs(t.exit_ts) + '</td>' +
+      '<td class="' + (t.pnl_usd >= 0 ? 'up' : 'down') + '">' + (t.pnl_usd >= 0 ? '+' : '') + t.pnl_usd.toFixed(2) + '</td>' +
+      '<td class="' + (t.pnl_pct >= 0 ? 'up' : 'down') + '">' + (t.pnl_pct >= 0 ? '+' : '') + t.pnl_pct.toFixed(2) + '</td>' +
+      '<td class="muted">' + t.reason + '</td></tr>').join('')
+    : '<tr><td colspan="4" class="muted">no closed trades yet</td></tr>');
+
+  // decision log
+  $('log').innerHTML = (D.decisions || []).map(d =>
+    '<div class="log-item"><span class="t">' + shortTs(d.ts) + '</span>' +
+    '<span class="chip ' + (d.decision === 'TRADE' ? 'trade' : 'wait') + '">' + d.decision + '</span>' +
+    '<span class="muted">' + (d.reasons || '') + '</span></div>').join('') ||
+    '<div class="muted">no decisions logged yet</div>';
+
+  // news
+  $('news-n').textContent = (nw.n_window || 0) + ' headlines / 18h';
+  $('news').innerHTML = (nw.items || []).map(i =>
+    '<div class="news-item"><span class="dir ' +
+    (i.direction > 0 ? 'up' : i.direction < 0 ? 'down' : 'flat') + '">' +
+    (i.direction > 0 ? '+' : i.direction < 0 ? '\u2212' : '\u00b7') + '</span>' +
+    (i.title || '') + (i.xrp ? '<span class="tagcoin">SOL</span>' : '') +
+    '<div class="src">' + (i.source || '') + (i.age_h != null ? ' \u00b7 ' + Math.round(i.age_h) + 'h ago' : '') + '</div></div>'
+  ).join('') || '<div class="muted">no headlines</div>';
+
+  $('age').textContent = 'signal ' + shortTs(D.ts);
+  $('price').textContent = (D.price || 0).toFixed(2);
+}
+
+async function livePrice() {
+  try {
+    const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT');
+    const t = await r.json();
+    $('price').textContent = parseFloat(t.lastPrice).toFixed(2);
+    const ch = parseFloat(t.priceChangePercent);
+    const el = $('chg24');
+    el.textContent = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '% / 24h';
+    el.className = ch > 0 ? 'up' : ch < 0 ? 'down' : 'flat';
+  } catch (e) { /* offline: keep agent-reported price */ }
+}
+
+// ---- encrypted data: PBKDF2 (SHA-256, 10k) + AES-256-CBC, openssl-compatible
+async function decryptTxt(pw) {
+  const res = await fetch('data.js.enc?ts=' + Date.now(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('encrypted data HTTP ' + res.status);
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if (new TextDecoder().decode(buf.slice(0, 8)) !== 'Salted__') throw new Error('bad file');
+  const salt = buf.slice(8, 16), ct = buf.slice(16);
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw),
+                                           'PBKDF2', false, ['deriveBits']);
+  const bits = new Uint8Array(await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations: 10000, hash: 'SHA-256' }, km, 384));
+  const key = await crypto.subtle.importKey('raw', bits.slice(0, 32),
+                                            { name: 'AES-CBC' }, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-CBC', iv: bits.slice(32, 48) }, key, ct);
+  return new TextDecoder().decode(pt);
+}
+
+async function loadData(pw) {
+  const txt = await decryptTxt(pw);
+  Object.assign(D, JSON.parse(
+      txt.trim().replace(/^window\.AGENT_DATA\s*=\s*/, '').replace(/;\s*$/, '')));
+  render();
+}
+
+function showGate(msg) {
+  $('gate').hidden = false;
+  $('pw-err').textContent = msg || '';
+  if (!msg) $('pw-input').value = '';
+  $('pw-input').focus();
+}
+
+async function tryUnlock() {
+  const pw = $('pw-input').value.trim();
+  if (!pw) return;
+  $('pw-err').textContent = 'checking ...';
+  try {
+    await loadData(pw);
+    localStorage.setItem('dash_pw', pw);
+    $('gate').hidden = true;
+  } catch (e) {
+    showGate('Wrong password \u2014 try again.');
+  }
+}
+
+$('pw-btn').addEventListener('click', tryUnlock);
+$('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+
+(async () => {
+  const saved = localStorage.getItem('dash_pw');
+  if (saved) {
+    try { await loadData(saved); }
+    catch (e) {
+      localStorage.removeItem('dash_pw');
+      showGate('Stored password no longer works \u2014 re-enter.');
+    }
+  } else {
+    showGate();
+  }
+  livePrice();
+})();
+
+setInterval(livePrice, 30000);
+setInterval(() => {
+  const saved = localStorage.getItem('dash_pw');
+  if (saved) loadData(saved).catch(() => {});
+}, 60000);
+</script>
+</body>
+</html>
