@@ -106,6 +106,10 @@
   .gate-card button { width: 100%; padding: 10px; border-radius: 8px; border: none;
                       background: var(--sol); color: #04120b; font-weight: 700; font-size: 14px; }
   .gate-err { color: var(--red); font-size: 12px; margin-top: 8px; }
+
+  /* the hidden attribute must always win -- the explicit display:flex on
+     .gate-overlay would otherwise keep the gate on screen after unlock */
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -373,6 +377,7 @@ async function tryUnlock() {
   try {
     await loadData(pw);
     localStorage.setItem('dash_pw', pw);
+    $('pw-err').textContent = '';
     $('gate').hidden = true;
   } catch (e) {
     showGate('Wrong password \u2014 try again.');
