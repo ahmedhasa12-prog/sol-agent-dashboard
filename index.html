@@ -6,109 +6,140 @@
 <meta name="theme-color" content="#0b0e14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>SOL Day-Trade Agent</title>
+<title>SOL Agent — Paper Trading</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   :root {
     --bg: #0b0e14; --card: #131826; --border: #232b40; --text: #e6edf3;
     --muted: #8b94a7; --green: #2ea043; --red: #f85149; --amber: #d29922;
-    --blue: #58a6ff; --sol: #14f195;
+    --sol: #14f195;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: var(--bg); color: var(--text);
-    font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    font-size: 14px; line-height: 1.45;
-    max-width: 540px; margin: 0 auto; padding: 14px 12px 32px;
+    font-family: 'Inter', -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    max-width: 560px; margin: 0 auto; padding: 14px 12px 32px;
   }
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px; margin-bottom: 12px;
-  }
-  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .muted { color: var(--muted); font-size: 12px; }
-  h1 { font-size: 17px; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
+  .muted { color: var(--muted); font-size: 12.5px; }
+  h1 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
   h1 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sol);
-            box-shadow: 0 0 8px var(--sol); }
-  .price { font-size: 22px; font-weight: 600; }
+            box-shadow: 0 0 8px var(--sol); animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  .chip { font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px; padding: 3px 8px;
+          border-radius: 8px; background: rgba(210,153,34,.13); color: #e3b341;
+          border: 1px solid rgba(210,153,34,.35); margin-left: auto; white-space: nowrap; }
   .up { color: var(--green); } .down { color: var(--red); } .flat { color: var(--muted); }
+  .price, .equity, .s-big, .score .v, .trade-row .res {
+    font-variant-numeric: tabular-nums; }
 
-  .decision {
-    text-align: center; padding: 16px 14px; border-radius: 12px;
-    margin: 12px 0; font-weight: 700; font-size: 18px; letter-spacing: 1px;
-    border: 1px solid var(--border);
-  }
-  .decision.wait { background: #161b29; color: var(--muted); }
-  .decision.trade { background: rgba(46,160,67,.14); color: var(--green);
-                    border-color: rgba(46,160,67,.5); }
-  .decision .sub { font-size: 12px; font-weight: 400; color: var(--muted);
-                   margin-top: 6px; letter-spacing: 0; display: block; }
+  /* top bar */
+  .topcard { background: linear-gradient(180deg, #141a2b, #111626);
+             border: 1px solid var(--border); border-radius: 14px;
+             padding: 13px 16px; margin-bottom: 12px; display: flex;
+             justify-content: space-between; align-items: center; gap: 10px;
+             box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
+  .price { font-size: 27px; font-weight: 800; letter-spacing: -.5px; }
+  .equity-box { text-align: right; }
+  .equity { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
 
-  .gates { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .gate { border-radius: 10px; border: 1px solid var(--border); padding: 10px 8px;
-          text-align: center; background: var(--card); }
-  .gate .g-name { font-size: 10px; color: var(--muted); text-transform: uppercase;
-                  letter-spacing: .8px; }
-  .gate .g-state { font-size: 13px; font-weight: 700; margin-top: 3px; }
-  .gate.pass .g-state { color: var(--green); }
-  .gate.fail .g-state { color: var(--red); }
-  .gate.warn .g-state { color: var(--amber); }
+  /* status banner */
+  .banner { text-align: center; border-radius: 14px; padding: 15px 12px;
+            font-weight: 800; font-size: 16px; letter-spacing: 1.2px; margin-bottom: 12px;
+            text-transform: uppercase; }
+  .banner .sub { font-size: 12.5px; font-weight: 400; color: var(--text);
+                 opacity: .75; margin-top: 5px; line-height: 1.5;
+                 text-transform: none; letter-spacing: 0; }
+  .banner.waiting { background: linear-gradient(135deg, #1c2438, #131826);
+                    border: 1px solid var(--border); color: #9db4d8; }
+  .banner.holding { background: linear-gradient(135deg, rgba(46,160,67,.25), rgba(20,241,149,.10));
+                    border: 1px solid rgba(46,160,67,.55); color: #7ee787; }
+  .banner.paused  { background: linear-gradient(135deg, rgba(210,153,34,.22), #131826);
+                    border: 1px solid rgba(210,153,34,.5); color: #e3b341; }
 
-  .metric { margin: 9px 0; }
-  .metric .bar { height: 5px; border-radius: 3px; background: var(--border);
-                 margin-top: 5px; position: relative; overflow: hidden; }
-  .metric .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
-  .kv { display: flex; justify-content: space-between; font-size: 13px; }
-  .kv b { font-weight: 600; }
+  /* tappable summary cards */
+  details.xcard { background: linear-gradient(180deg, #141a2b, #111626);
+                  border: 1px solid var(--border); border-left: 3px solid var(--accent, var(--border));
+                  border-radius: 14px; margin-bottom: 12px; overflow: hidden;
+                  box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
+  #open-card    { --accent: #14f195; }
+  #why-card     { --accent: #58a6ff; }
+  #history-card { --accent: #bc8cff; }
+  #score-card   { --accent: #e3b341; }
+  details.xcard summary { list-style: none; cursor: pointer; display: flex;
+                          justify-content: space-between; align-items: center; gap: 10px;
+                          padding: 14px 14px 14px 15px; -webkit-tap-highlight-color: transparent; }
+  details.xcard summary::-webkit-details-marker { display: none; }
+  details.xcard summary:active { background: rgba(255,255,255,.03); }
+  details.xcard[open] summary { border-bottom: 1px solid var(--border); }
+  .s-left { flex: 1; min-width: 0; }
+  .s-title { font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
+             color: var(--accent, var(--muted)); margin-bottom: 2px; }
+  #open-card .s-title::before    { content: '\1F4C8\00A0\00A0'; }
+  #why-card .s-title::before     { content: '\23F3\00A0\00A0'; }
+  #history-card .s-title::before { content: '\1F4CA\00A0\00A0'; }
+  #score-card .s-title::before   { content: '\1F3C6\00A0\00A0'; }
+  .s-sub { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+  .s-big { font-size: 19px; font-weight: 800; text-align: right; white-space: nowrap; }
+  .chev { color: var(--accent, var(--muted)); font-size: 15px; font-weight: 700;
+          transition: transform .15s; }
+  details.xcard[open] .chev { transform: rotate(90deg); }
+  .xbody { padding: 10px 16px 14px; }
 
-  .big { font-size: 24px; font-weight: 700; }
-  .pos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 8px;
-              font-size: 13px; }
-  .pos-grid .muted { font-size: 11px; }
+  /* checklist inside "why waiting" */
+  .check { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border);
+           align-items: flex-start; }
+  .check:last-child { border-bottom: none; }
+  .check .mark { font-size: 15px; font-weight: 800; width: 20px; text-align: center; }
+  .check .txt { flex: 1; font-size: 13.5px; }
+  .check .detail { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+  .ok { color: var(--green); } .no { color: var(--red); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  td, th { padding: 6px 6px; text-align: right; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; }
-  td:first-child, th:first-child { text-align: left; }
+  /* open trade details */
+  .trade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .trade-grid .muted { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; }
+  .trade-grid b { font-size: 14.5px; font-weight: 600; }
 
-  .log-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border);
-              font-size: 12.5px; align-items: baseline; }
-  .log-item:last-child { border-bottom: none; }
-  .log-item .t { color: var(--muted); white-space: nowrap; font-size: 11px; min-width: 74px; }
-  .chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
-  .chip.trade { background: rgba(46,160,67,.18); color: var(--green); }
-  .chip.wait { background: rgba(139,148,167,.15); color: var(--muted); }
+  /* closed trade rows */
+  .trade-row { display: flex; justify-content: space-between; gap: 8px;
+               padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .trade-row:last-child { border-bottom: none; }
+  .trade-row .when { color: var(--muted); font-size: 12px; }
+  .trade-row .res { font-weight: 700; font-size: 15px; white-space: nowrap; }
+  .trade-row .why { color: var(--muted); font-size: 12px; text-align: right; }
 
-  .news-item { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-  .news-item:last-child { border-bottom: none; }
-  .news-item .src { color: var(--muted); font-size: 11px; }
-  .dir { font-weight: 700; margin-right: 6px; }
-  .tagcoin { color: var(--sol); font-size: 10px; border: 1px solid rgba(20,241,149,.4);
-             padding: 1px 5px; border-radius: 8px; margin-left: 6px; }
+  /* score + feed */
+  .score { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center;
+           margin-bottom: 10px; }
+  .score .v { font-size: 15px; font-weight: 700; }
+  .score .k { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
+  .feed-item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px;
+               border-bottom: 1px solid var(--border); }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-item .t { color: var(--muted); white-space: nowrap; font-size: 12px; }
 
-  .spark { width: 100%; height: 70px; margin-top: 8px; }
-  .hours { display: flex; gap: 2px; align-items: flex-end; height: 56px; margin-top: 10px; }
-  .hours .h { flex: 1; background: var(--blue); opacity: .55; border-radius: 2px 2px 0 0; }
-  .hours .h.low { background: var(--red); opacity: .8; }
-  .hours .h.high { background: var(--sol); opacity: .9; }
-  footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 8px; }
-  .pill { font-size: 11px; padding: 2px 8px; border-radius: 10px;
-          background: var(--border); color: var(--muted); }
+  summary.tech { color: var(--muted); font-size: 12px; cursor: pointer; padding: 9px 12px;
+                 background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+  details[open] summary.tech { border-radius: 10px 10px 0 0; }
+  .techbody { background: var(--card); border: 1px solid var(--border); border-top: none;
+              border-radius: 0 0 14px 14px; font-size: 12px; color: var(--muted);
+              word-break: break-word; line-height: 1.6; padding: 10px 16px; margin-bottom: 12px; }
 
-  /* password gate */
+  footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 8px; line-height: 1.6; }
+
+  /* password gate (working -- do not break) */
   .gate-overlay { position: fixed; inset: 0; background: rgba(9,11,16,.98); z-index: 50;
                   display: flex; align-items: center; justify-content: center; padding: 20px; }
   .gate-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
                padding: 22px; width: 100%; max-width: 340px; }
-  .gate-card h2 { font-size: 15px; margin-bottom: 6px; }
+  .gate-card h2 { font-size: 15px; margin-bottom: 6px; color: var(--text); }
   .gate-card p { font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
   .gate-card input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
                      background: var(--bg); color: var(--text); font-size: 14px; margin-bottom: 10px; }
   .gate-card button { width: 100%; padding: 10px; border-radius: 8px; border: none;
                       background: var(--sol); color: #04120b; font-weight: 700; font-size: 14px; }
   .gate-err { color: var(--red); font-size: 12px; margin-top: 8px; }
-
-  /* the hidden attribute must always win -- the explicit display:flex on
-     .gate-overlay would otherwise keep the gate on screen after unlock */
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -124,219 +155,299 @@
   </div>
 </div>
 
-<h1><span class="dot"></span> SOL Day-Trade Agent <span class="pill" id="mode-pill">paper</span></h1>
+<h1><span class="dot"></span> SOL Agent &mdash; paper trading <span class="chip">SIMULATED&nbsp;ACCOUNT</span></h1>
 
-<div class="card">
-  <div class="row">
-    <div>
-      <div class="muted">SOL / USDT &middot; Binance</div>
-      <div class="price" id="price">--</div>
+<div class="topcard">
+  <div>
+    <div class="muted">SOL price now</div>
+    <div class="price" id="price">--</div>
+    <div class="muted" id="chg24">--</div>
+  </div>
+  <div class="equity-box">
+    <div class="muted">Account</div>
+    <div class="equity" id="equity">--</div>
+    <div id="pnl" class="flat">--</div>
+  </div>
+</div>
+
+<div class="banner waiting" id="banner">WAITING FOR A GOOD SETUP<div class="sub" id="banner-sub"></div></div>
+
+<details class="xcard" id="open-card" hidden>
+  <summary>
+    <div class="s-left">
+      <div class="s-title">Open trade</div>
+      <div class="s-sub" id="open-sum-sub">--</div>
     </div>
-    <div style="text-align:right">
-      <div class="muted" id="age">updated --</div>
-      <div id="chg24" class="flat">--</div>
+    <div class="s-big" id="open-sum-big">--</div>
+    <div class="chev">&#8250;</div>
+  </summary>
+  <div class="xbody">
+    <div class="muted" style="text-align:center; margin-bottom:10px" id="live-pnl-note"></div>
+    <div class="trade-grid" id="trade-grid"></div>
+  </div>
+</details>
+
+<details class="xcard" id="why-card">
+  <summary>
+    <div class="s-left">
+      <div class="s-title">Why is it waiting?</div>
+      <div class="s-sub" id="why-sum-sub">tap to see what is missing</div>
     </div>
+    <div class="s-big" id="why-sum-big">--</div>
+    <div class="chev">&#8250;</div>
+  </summary>
+  <div class="xbody">
+    <div class="muted" style="margin-bottom:6px">The agent buys only when <b>all five</b> pass:</div>
+    <div id="checks"></div>
   </div>
-  <div class="decision wait" id="decision">WAIT<span class="sub" id="decision-sub"></span></div>
-  <div class="gates">
-    <div class="gate" id="g-signal"><div class="g-name">Signal</div><div class="g-state">--</div></div>
-    <div class="gate" id="g-market"><div class="g-name">Market</div><div class="g-state">--</div></div>
-    <div class="gate" id="g-news"><div class="g-name">News</div><div class="g-state">--</div></div>
-  </div>
-</div>
+</details>
 
-<div class="card" id="signal-card">
-  <div class="row"><div class="muted" style="text-transform:uppercase; letter-spacing:.8px; font-size:11px">H2 &middot; BTC-lag catch-up</div>
-  <div class="muted" id="h2-req"></div></div>
-  <div class="metric"><div class="kv"><span class="muted">BTC move, 6h</span><b id="btc-move">--</b></div>
-    <div class="bar"><div class="fill" id="btc-fill" style="background:var(--green); width:0%"></div></div></div>
-  <div class="metric"><div class="kv"><span class="muted">SOL beta-gap</span><b id="sol-gap">--</b></div>
-    <div class="bar"><div class="fill" id="gap-fill" style="background:var(--red); width:0%"></div></div></div>
-  <div class="kv" style="margin-top:4px">
-    <span class="muted">beta (90d): <b id="beta">--</b></span>
-    <span class="muted">regime: <b id="regime">--</b></span>
-  </div>
-</div>
-
-<div class="card">
-  <div class="row">
-    <div><div class="muted">Paper equity</div><div class="big" id="equity">--</div></div>
-    <div style="text-align:right">
-      <div class="muted">P&L since start</div>
-      <div id="pnl" class="flat">--</div>
-      <div class="muted" id="stats" style="margin-top:4px"></div>
+<details class="xcard" id="history-card">
+  <summary>
+    <div class="s-left">
+      <div class="s-title">Trade history</div>
+      <div class="s-sub" id="hist-sum-sub">--</div>
     </div>
+    <div class="s-big" id="hist-sum-big">--</div>
+    <div class="chev">&#8250;</div>
+  </summary>
+  <div class="xbody" id="trades"></div>
+</details>
+
+<details class="xcard" id="score-card">
+  <summary>
+    <div class="s-left">
+      <div class="s-title">How it's going</div>
+      <div class="s-sub" id="score-sum-sub">--</div>
+    </div>
+    <div class="s-big" id="score-sum-big">--</div>
+    <div class="chev">&#8250;</div>
+  </summary>
+  <div class="xbody">
+    <div class="score" id="score"></div>
+    <div class="muted" style="margin:4px 0 8px; text-transform:uppercase; font-size:10.5px; letter-spacing:1px">Recent activity</div>
+    <div id="feed"></div>
   </div>
-  <svg class="spark" id="spark" viewBox="0 0 540 70" preserveAspectRatio="none"></svg>
-  <div id="position"></div>
-</div>
+</details>
 
-<div class="card">
-  <div class="row"><div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px">Average day shape (info only)</div>
-  <div class="muted" id="hours-note">H1 timing failed backtest</div></div>
-  <div class="hours" id="hours"></div>
-</div>
-
-<div class="card" id="trades-card">
-  <div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px; margin-bottom:4px">Paper trades</div>
-  <table id="trades"></table>
-</div>
-
-<div class="card">
-  <div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px; margin-bottom:4px">Decision log</div>
-  <div id="log"></div>
-</div>
-
-<div class="card">
-  <div class="row"><div class="muted" style="text-transform:uppercase; font-size:11px; letter-spacing:.8px">News radar</div>
-  <div class="muted" id="news-n"></div></div>
-  <div id="news"></div>
-</div>
+<details>
+  <summary class="tech">Technical details (for debugging)</summary>
+  <div class="techbody" id="tech">--</div>
+</details>
 
 <footer>
-  Paper trading account &middot; simulated money only &middot; live mode disabled by design.<br>
-  Backtest record of H2 rule: +16.2% / 10 months, PF 1.78, t-stat 1.04, n=23 (small sample &mdash; judge paper results, not promises).
+  Paper trading account &middot; simulated money only &middot; the agent checks roughly every hour &middot;
+  Telegram notifies you on every trade.
 </footer>
 
 <script>
 let D = {};
+let lastPrice = null;
 const $ = id => document.getElementById(id);
 
-function cls(v, invert) {
-  if (v > 0) return invert ? 'down' : 'up';
-  if (v < 0) return invert ? 'up' : 'down';
-  return 'flat';
-}
+function cls(v) { return v > 0 ? 'up' : v < 0 ? 'down' : 'flat'; }
 function shortTs(ts) { return (ts || '').replace('T', ' ').slice(5, 16); }
+function niceNum(v, d) { return (v >= 0 ? '+' : '') + Number(v).toFixed(d); }
+function escTime(ts) {
+  try { return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+  catch (e) { return '--'; }
+}
+function reasonWord(code) {
+  if (code === 'stop') return 'safety stop';
+  if (code === 'daily-loss-cap') return 'daily loss limit';
+  if (code === 'time-exit') return 'planned exit time';
+  return code;
+}
 
-function gateChip(el, state) {
-  // state: 'pass' | 'fail' | 'warn'
-  el.className = 'gate ' + state;
+function buildChecks(h2, nw, acc) {
+  const checks = [];
+  const btcMove = h2.btc_ret_L_pct != null ? h2.btc_ret_L_pct : 0;
+  const needMove = h2.btc_move_pct || 1.5;
+  checks.push({
+    ok: btcMove >= needMove,
+    txt: 'BTC makes a strong jump (+' + needMove + '% or more within 6 hours)',
+    detail: 'BTC last 6h: ' + niceNum(btcMove, 2) + '% \u2014 ' +
+            (btcMove >= needMove ? 'strong enough' : 'not there yet')
+  });
+  const gap = h2.shortfall_pct != null ? h2.shortfall_pct : 0;
+  const needGap = h2.gap_pct || 0.5;
+  checks.push({
+    ok: gap <= -needGap,
+    txt: 'SOL is falling behind that jump (lagging by ' + needGap + '%+)',
+    detail: 'SOL vs expectation: ' + niceNum(gap, 2) + '% \u2014 ' +
+            (gap <= -needGap ? 'lagging, catch-up possible' : 'moving normally with BTC')
+  });
+  checks.push({
+    ok: h2.regime_ok === true,
+    txt: 'SOL is in an uptrend (above its 20-day average)',
+    detail: h2.regime_ok ? 'yes, the trend is up' :
+            'no \u2014 SOL is below its 20-day average; the strategy does not buy in downtrends'
+  });
+  const newsOk = nw.action !== 'veto';
+  checks.push({
+    ok: newsOk,
+    txt: 'No worrying crypto news in the last hours',
+    detail: newsOk
+      ? ('clean \u2014 scanned ' + (nw.n_window || 0) + ' headlines from the big crypto news sources')
+      : 'negative headlines detected \u2014 standing aside'
+  });
+  const cooldownActive = acc.cooldown_until && new Date(acc.cooldown_until) > new Date(D.ts || Date.now());
+  checks.push({
+    ok: !acc.halted && !cooldownActive,
+    txt: 'Account ready (not cooling down after a previous trade)',
+    detail: cooldownActive ? 'cooling down \u2014 resumes after ' + shortTs(acc.cooldown_until)
+                           : 'ready to trade'
+  });
+  return checks;
 }
 
 function render() {
-  const h2 = D.h2 || {}, mk = D.market || {}, nw = D.news || {},
-        acc = D.account || {}, tim = D.timing || {};
+  const acc = D.account || {}, h2 = D.h2 || {}, mk = D.market || {},
+        nw = D.news || {}, pos = acc.position;
+  const eq = acc.equity != null ? acc.equity : 200;
+  const pnl = eq - (acc.start_capital || 200);
+  const trs = D.trades || [];
+  const wins = trs.filter(t => t.pnl_usd > 0).length;
+  const losses = trs.length - wins;
+  const tot = trs.reduce((s, t) => s + t.pnl_usd, 0);
+  const winsPct = trs.length ? Math.round(wins / trs.length * 100) : null;
 
-  // decision banner
-  const dec = $('decision');
-  dec.className = 'decision ' + (D.decision === 'TRADE' ? 'trade' : 'wait');
-  dec.firstChild.nodeValue = D.decision === 'TRADE' ? 'TRADE  (paper)' : 'WAIT';
-  $('decision-sub').textContent = D.ts ? 'as of ' + shortTs(D.ts) + ' UTC' : '';
+  // ---- top bar ---------------------------------------------------------
+  $('equity').textContent = eq.toFixed(2) + ' USDT';
+  $('pnl').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' all-time';
+  $('pnl').className = cls(pnl);
 
-  // gates
-  gateChip($('g-signal'), h2.fires ? 'pass' : 'fail');
-  $('g-signal').querySelector('.g-state').textContent = h2.fires ? 'FIRE' : 'NO';
-  const mkState = mk.action === 'veto' ? 'fail' : mk.action === 'downsize' ? 'warn' : 'pass';
-  gateChip($('g-market'), mkState);
-  $('g-market').querySelector('.g-state').textContent = (mk.action || '--').toUpperCase();
-  const nwState = nw.action === 'veto' ? 'fail' : nw.action === 'downsize' ? 'warn' : 'pass';
-  gateChip($('g-news'), nwState);
-  $('g-news').querySelector('.g-state').textContent = (nw.action || '--').toUpperCase();
-
-  // H2 metrics
-  $('h2-req').textContent = 'need BTC \u2265 +' + (h2.btc_move_pct || 1.5) + '% \u00b7 gap \u2264 -' + (h2.gap_pct || 0.5) + '%';
-  const btcMove = h2.btc_ret_L_pct || 0;
-  $('btc-move').innerHTML = (btcMove >= 0 ? '+' : '') + btcMove.toFixed(2) + '%';
-  $('btc-move').className = btcMove >= (h2.btc_move_pct || 1.5) ? 'up' : 'flat';
-  $('btc-fill').style.width = Math.min(100, Math.max(3, btcMove / (h2.btc_move_pct || 1.5) * 100)) + '%';
-  const gap = h2.shortfall_pct || 0;
-  $('sol-gap').textContent = (gap >= 0 ? '+' : '') + gap.toFixed(2) + '%';
-  $('sol-gap').className = gap <= -(h2.gap_pct || 0.5) ? 'up' : 'flat';
-  $('gap-fill').style.width = Math.min(100, Math.max(3, Math.abs(gap) / (h2.gap_pct || 0.5) * 100)) + '%';
-  $('beta').textContent = (h2.beta || 0).toFixed(2);
-  const reg = $('regime');
-  reg.textContent = h2.regime_ok ? 'above SMA20 \u2713' : 'below SMA20 \u2717';
-  reg.className = h2.regime_ok ? 'up' : 'down';
-
-  // account
-  $('equity').textContent = (acc.equity ?? '--').toFixed ? acc.equity.toFixed(2) : '--';
-  const pnl = (acc.equity || 0) - (acc.start_capital || 200);
-  $('pnl').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT';
-  $('pnl').className = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'flat';
-  const st = D.stats || {};
-  $('stats').textContent = (st.n_trades || 0) + ' trades' +
-      (st.win_rate_pct != null ? ' \u00b7 win ' + st.win_rate_pct + '%' : '');
-
-  // equity sparkline
-  const pts = D.eq_curve && D.eq_curve.length > 1 ? D.eq_curve : [200, 200];
-  const mn = Math.min(...pts), mx = Math.max(...pts), span = Math.max(1, mx - mn);
-  const xs = pts.map((v, i) => (i / (pts.length - 1)) * 540);
-  const ys = pts.map(v => 65 - ((v - mn) / span) * 55);
-  const base = 65 - ((200 - mn) / span) * 55;
-  const rising = pts[pts.length - 1] >= pts[0];
-  $('spark').innerHTML =
-    '<line x1="0" y1="' + base + '" x2="540" y2="' + base + '" stroke="#232b40" stroke-dasharray="4 4" stroke-width="1"/>' +
-    '<polyline points="' + xs.map((x, i) => x + ',' + ys[i]).join(' ') +
-    '" fill="none" stroke="' + (rising ? '#2ea043' : '#f85149') + '" stroke-width="2"/>';
-
-  // open position
-  const p = acc.position;
-  $('position').innerHTML = p
-    ? '<div class="pos-grid">' +
-      '<div><div class="muted">ENTRY</div><b>' + p.entry_px + '</b> <span class="muted">(' + shortTs(p.entry_ts) + ')</span></div>' +
-      '<div><div class="muted">QTY</div><b>' + p.qty.toFixed(2) + '</b> SOL</div>' +
-      '<div><div class="muted">STOP</div><b class="down">' + p.stop_px + '</b> (-' + (D.stop_pct || 2.5) + '%)</div>' +
-      '<div><div class="muted">TIME EXIT</div><b>' + shortTs(p.exit_after) + '</b></div>' +
-      '</div>'
-    : '<div class="muted" style="margin-top:6px">flat &mdash; no open position' +
-      (acc.halted ? ' &middot; <span class="down">halted today (daily loss cap)</span>' : '') + '</div>';
-
-  // average-day shape
-  if (tim.ok && tim.avg_day_bps) {
-    const vals = tim.avg_day_bps, n = vals.length;
-    const mn2 = Math.min(...vals), mx2 = Math.max(...vals), span2 = Math.max(1, mx2 - mn2);
-    $('hours').innerHTML = vals.map((v, h) => {
-      const hh = (v - mn2) / span2;
-      const low = (tim.low_hours || []).includes(h), high = (tim.high_hours || []).includes(h);
-      return '<div class="h ' + (low ? 'low' : high ? 'high' : '') +
-             '" style="height:' + (12 + hh * 44) + 'px" title="' + h + ':00 UTC, ' + v + ' bps"></div>';
-    }).join('');
-    $('hours-note').textContent = 'low ~' + (tim.low_hours || []).map(h => h + 'h').join('/') +
-                                 ' UTC \u00b7 high ~' + (tim.high_hours || []).map(h => h + 'h').join('/') + ' UTC';
+  // ---- banner ----------------------------------------------------------
+  const banner = $('banner');
+  if (acc.halted) {
+    banner.className = 'banner paused';
+    banner.firstChild.nodeValue = 'PAUSED UNTIL TOMORROW';
+    $('banner-sub').textContent = 'Hit the daily safety limit (\u22123%) \u2014 it resumes automatically.';
+  } else if (pos) {
+    banner.className = 'banner holding';
+    banner.firstChild.nodeValue = 'IN A TRADE \u2014 HOLDING SOL';
+    $('banner-sub').textContent = 'The agent watches it and will sell by itself. Nothing for you to do.';
+  } else {
+    banner.className = 'banner waiting';
+    banner.firstChild.nodeValue = 'WAITING FOR A GOOD SETUP';
+    $('banner-sub').textContent = 'The agent checks the market every hour and only buys when everything lines up.';
   }
 
-  // trades table
-  const trs = D.trades || [];
-  $('trades').innerHTML = '<tr><th>closed</th><th>pnl USDT</th><th>pnl %</th><th>exit</th></tr>' +
-    (trs.length ? trs.map(t =>
-      '<tr><td>' + shortTs(t.exit_ts) + '</td>' +
-      '<td class="' + (t.pnl_usd >= 0 ? 'up' : 'down') + '">' + (t.pnl_usd >= 0 ? '+' : '') + t.pnl_usd.toFixed(2) + '</td>' +
-      '<td class="' + (t.pnl_pct >= 0 ? 'up' : 'down') + '">' + (t.pnl_pct >= 0 ? '+' : '') + t.pnl_pct.toFixed(2) + '</td>' +
-      '<td class="muted">' + t.reason + '</td></tr>').join('')
-    : '<tr><td colspan="4" class="muted">no closed trades yet</td></tr>');
+  // ---- open trade card ---------------------------------------------------
+  if (pos) {
+    $('open-card').hidden = false;
+    $('open-sum-sub').textContent = 'bought ' + (pos.size_usdt || 0).toFixed(0) +
+      ' USDT at ' + (pos.entry_px || 0).toFixed(2) +
+      ' \u00b7 will sell by ' + shortTs(pos.exit_after) + ' UTC';
+    const rows = [
+      ['Amount', (pos.qty || 0).toFixed(2) + ' SOL'],
+      ['Invested', (pos.size_usdt || 0).toFixed(2) + ' USDT'],
+      ['Bought at', (pos.entry_px || 0).toFixed(2) + ' USDT'],
+      ['Bought on', shortTs(pos.entry_ts) + ' UTC'],
+      ['Safety stop', (pos.stop_px || 0).toFixed(2) + ' (sells itself to protect you)'],
+      ['Auto-sell by', shortTs(pos.exit_after) + ' UTC']
+    ];
+    $('trade-grid').innerHTML = rows.map(r => '<div><div class="muted">' + r[0] +
+                     '</div><b>' + r[1] + '</b></div>').join('');
+    updateLivePnl();
+  } else {
+    $('open-card').hidden = true;
+  }
 
-  // decision log
-  $('log').innerHTML = (D.decisions || []).map(d =>
-    '<div class="log-item"><span class="t">' + shortTs(d.ts) + '</span>' +
-    '<span class="chip ' + (d.decision === 'TRADE' ? 'trade' : 'wait') + '">' + d.decision + '</span>' +
-    '<span class="muted">' + (d.reasons || '') + '</span></div>').join('') ||
-    '<div class="muted">no decisions logged yet</div>';
+  // ---- why waiting card ----------------------------------------------------
+  const checks = buildChecks(h2, nw, acc);
+  if (pos || acc.halted) {
+    $('why-card').hidden = true;
+  } else {
+    $('why-card').hidden = false;
+    const passing = checks.filter(c => c.ok).length;
+    const firstFail = checks.find(c => !c.ok);
+    $('why-sum-big').textContent = passing + '/5';
+    $('why-sum-big').className = 's-big ' + (passing === 5 ? 'up' : 'flat');
+    $('why-sum-sub').textContent = passing === 5
+      ? 'everything lines up \u2014 trade coming'
+      : 'missing: ' + (firstFail ? firstFail.txt.split('(')[0].trim().toLowerCase() : '--') + ' \u00b7 tap for details';
+    $('checks').innerHTML = checks.map(c =>
+      '<div class="check"><div class="mark ' + (c.ok ? 'ok' : 'no') + '">' +
+      (c.ok ? '\u2713' : '\u2717') + '</div><div class="txt">' + c.txt +
+      '<div class="detail">' + c.detail + '</div></div></div>').join('');
+  }
 
-  // news
-  $('news-n').textContent = (nw.n_window || 0) + ' headlines / 18h';
-  $('news').innerHTML = (nw.items || []).map(i =>
-    '<div class="news-item"><span class="dir ' +
-    (i.direction > 0 ? 'up' : i.direction < 0 ? 'down' : 'flat') + '">' +
-    (i.direction > 0 ? '+' : i.direction < 0 ? '\u2212' : '\u00b7') + '</span>' +
-    (i.title || '') + (i.xrp ? '<span class="tagcoin">SOL</span>' : '') +
-    '<div class="src">' + (i.source || '') + (i.age_h != null ? ' \u00b7 ' + Math.round(i.age_h) + 'h ago' : '') + '</div></div>'
-  ).join('') || '<div class="muted">no headlines</div>';
+  // ---- trade history card ---------------------------------------------------
+  if (trs.length) {
+    $('hist-sum-big').textContent = niceNum(tot, 2);
+    $('hist-sum-big').className = 's-big ' + cls(tot);
+    $('hist-sum-sub').textContent = trs.length + ' closed \u00b7 ' + wins +
+      (wins === 1 ? ' win / ' : ' wins / ') + losses + (losses === 1 ? ' loss' : ' losses');
+    $('trades').innerHTML = trs.map(t =>
+      '<div class="trade-row"><div><b class="' + cls(t.pnl_usd) + '">' +
+      niceNum(t.pnl_usd, 2) + ' USDT</b><div class="when">' + shortTs(t.exit_ts) + ' UTC</div></div>' +
+      '<div style="text-align:right"><b class="' + cls(t.pnl_pct) + '">' + niceNum(t.pnl_pct, 2) + '%</b>' +
+      '<div class="why">sold: ' + reasonWord(t.reason) + '</div></div></div>').join('');
+  } else {
+    $('hist-sum-big').textContent = '--';
+    $('hist-sum-big').className = 's-big flat';
+    $('hist-sum-sub').textContent = 'no trades yet \u2014 patience is the strategy';
+    $('trades').innerHTML = '<div class="muted">The agent only buys when all five checks pass \u2014 in a quiet market that can take days or even weeks. That patience is what protects the account.</div>';
+  }
 
-  $('age').textContent = 'signal ' + shortTs(D.ts);
-  $('price').textContent = (D.price || 0).toFixed(2);
+  // ---- score card -------------------------------------------------------------
+  $('score-sum-big').textContent = eq.toFixed(2);
+  $('score-sum-big').className = 's-big ' + cls(pnl);
+  $('score-sum-sub').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) +
+    ' all-time \u00b7 ' + trs.length + ' trades \u00b7 ' + (winsPct == null ? '--' : winsPct + '%') + ' wins';
+  const best = trs.length ? Math.max(...trs.map(t => t.pnl_usd)) : null;
+  $('score').innerHTML =
+    '<div><div class="v ' + cls(pnl) + '">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '</div><div class="k">P&L USDT</div></div>' +
+    '<div><div class="v">' + trs.length + '</div><div class="k">trades</div></div>' +
+    '<div><div class="v">' + (winsPct == null ? '--' : winsPct + '%') + '</div><div class="k">win rate</div></div>' +
+    '<div><div class="v ' + cls(best || 0) + '">' + (best == null ? '--' : niceNum(best, 2)) + '</div><div class="k">best trade</div></div>';
+
+  const feed = (D.decisions || []).slice(0, 5).map(d =>
+    '<div class="feed-item"><span class="t">' + escTime(d.ts) + '</span>' +
+    '<span>' + (d.decision === 'TRADE'
+        ? '<b class="up">signal fired \u2014 the agent is buying</b>'
+        : 'checked the market \u2014 conditions not met yet, waiting') + '</span></div>').join('');
+  $('feed').innerHTML = feed || '<div class="muted">first check coming soon</div>';
+
+  // ---- tech --------------------------------------------------------------------
+  $('tech').innerHTML =
+    'decision: <b>' + (D.decision || '--') + '</b><br>raw reasons: ' +
+    ((D.vetoes || []).join(' | ') || 'none (all gates green)') +
+    '<br>h2: BTC ' + niceNum(h2.btc_ret_L_pct || 0, 2) + '%/6h, gap ' +
+    niceNum(h2.shortfall_pct || 0, 2) + '%, beta ' + (h2.beta || '--') +
+    '<br>market gate: ' + (mk.action || '--') + ' \u00b7 news gate: ' + (nw.action || '--') +
+    '<br>signal time: ' + (D.ts || '--') +
+    '<br>funding: ' + (mk.funding_8h != null ? (mk.funding_8h * 100).toFixed(4) + '%/8h' : 'n/a') +
+    ' \u00b7 fear&greed: ' + (mk.fng_value != null ? mk.fng_value : 'n/a');
+}
+
+function updateLivePnl() {
+  const pos = (D.account || {}).position;
+  if (!pos || lastPrice == null) return;
+  const now = lastPrice * 0.9998 * pos.qty;   // approx net of fees
+  const p = now - pos.size_usdt;
+  const pct = p / pos.size_usdt * 100;
+  $('open-sum-big').textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + ' USDT';
+  $('open-sum-big').className = 's-big ' + cls(p);
+  $('live-pnl-note').textContent = 'live profit/loss vs current SOL price ' + lastPrice.toFixed(2) +
+    ' (' + niceNum(pct, 2) + '%)';
+}
+
+function showPrice(t) {
+  lastPrice = parseFloat(t.lastPrice);
+  $('price').textContent = lastPrice.toFixed(2);
+  const ch = parseFloat(t.priceChangePercent);
+  $('chg24').textContent = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '% past 24h';
+  $('chg24').className = 'muted ' + cls(ch);
+  updateLivePnl();
 }
 
 async function livePrice() {
   try {
     const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT');
-    const t = await r.json();
-    $('price').textContent = parseFloat(t.lastPrice).toFixed(2);
-    const ch = parseFloat(t.priceChangePercent);
-    const el = $('chg24');
-    el.textContent = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '% / 24h';
-    el.className = ch > 0 ? 'up' : ch < 0 ? 'down' : 'flat';
-  } catch (e) { /* offline: keep agent-reported price */ }
+    showPrice(await r.json());
+  } catch (e) { /* offline: keep last known price */ }
 }
 
 // ---- encrypted data: PBKDF2 (SHA-256, 10k) + AES-256-CBC, openssl-compatible
